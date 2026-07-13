@@ -79,7 +79,8 @@ func loadCfg() *WebhookCfg {
 	_ = godotenv.Load()
 	vToken := os.Getenv("WEBHOOK_VERIFY_TOKEN")
 	if vToken == "" {
-		vToken = "whatsapp_secure_vtoken_2026"
+		logger.Error("WEBHOOK_VERIFY_TOKEN is not set — refusing to start with a hardcoded default")
+		os.Exit(1)
 	}
 	port := os.Getenv("WEBHOOK_PORT")
 	if port == "" {

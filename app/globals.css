@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --wa-green: #00a884;
-  --wa-green-dark: #008069;
-  --wa-bg-chat: #efeae2;
+  /* Paleta Inteliar Inbox — tomada del mockup WhatsApp CRM */
+  --ib-bg: #eef2f7;
+  --ib-sidebar: #0e1c14;
+  --ib-muted: #6b7280;
+  --ib-muted-2: #9ca3af;
+
+  --wa-green: #128a4c;
+  --wa-green-dark: #0c6b3b;
+  --wa-green-bright: #22c55e;
+  --wa-bg-chat: #efe9df;
   --wa-bubble-out: #d9fdd3;
 }
 
@@ -13,6 +20,6 @@ body {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }

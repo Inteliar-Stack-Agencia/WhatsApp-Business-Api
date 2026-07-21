@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LABELS, type Conversation, type Message } from "@/lib/types";
 
+const DISABLED_TABS = ["Detalles", "Notas", "Tareas", "Negocios"];
+
 export default function ChatWindow({ conversationId }: { conversationId: string }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -61,6 +63,16 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
           setMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversations",
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => setConversation(payload.new as Conversation)
+      )
       .subscribe();
 
     return () => {
@@ -100,62 +112,58 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
     setSending(false);
   }
 
-  async function setLabel(label: string | null) {
-    if (!conversation) return;
-    setConversation({ ...conversation, label: label as Conversation["label"] });
-    await fetch("/api/whatsapp/conversations", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: conversationId, label }),
-    });
-  }
-
   if (!conversation) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-gray-50 text-sm text-gray-400">
+      <div className="flex flex-1 items-center justify-center text-sm text-[var(--ib-muted-2)]">
         Cargando conversación…
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-1 flex-col">
-      {/* Header del chat */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-lg">
-            {(conversation.contact_name ?? conversation.contact_phone)
-              .charAt(0)
-              .toUpperCase()}
-          </div>
-          <div>
-            <div className="font-medium">
-              {conversation.contact_name ?? `+${conversation.contact_phone}`}
-            </div>
-            <div className="text-xs text-gray-400">+{conversation.contact_phone}</div>
-          </div>
-        </div>
+  const activeLabel = LABELS.find((l) => l.value === conversation.label);
 
-        {/* Etiquetas de lead */}
-        <div className="flex items-center gap-1">
-          {LABELS.map((l) => (
-            <button
-              key={l.value}
-              onClick={() => setLabel(conversation.label === l.value ? null : l.value)}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                conversation.label === l.value
-                  ? l.color + " ring-1 ring-current"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-              }`}
-            >
-              {l.text}
-            </button>
-          ))}
+  return (
+    <div className="flex min-w-0 flex-1 flex-col rounded-2xl bg-white shadow-sm">
+      {/* Header del chat */}
+      <div className="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold">
+          {(conversation.contact_name ?? conversation.contact_phone)
+            .charAt(0)
+            .toUpperCase()}
         </div>
+        <div className="font-bold text-[13px]">
+          {conversation.contact_name ?? `+${conversation.contact_phone}`}
+        </div>
+        {activeLabel && (
+          <span
+            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${activeLabel.color}`}
+          >
+            {activeLabel.text}
+          </span>
+        )}
+      </div>
+
+      {/* Tabs (solo Chat es funcional por ahora) */}
+      <div className="flex gap-4 border-b border-gray-100 px-4 pt-2.5 text-xs font-semibold">
+        <span className="border-b-2 border-[var(--wa-green)] pb-2 text-[var(--wa-green)]">
+          Chat
+        </span>
+        {DISABLED_TABS.map((tab) => (
+          <span
+            key={tab}
+            title="Próximamente"
+            className="cursor-not-allowed pb-2 text-gray-300"
+          >
+            {tab}
+          </span>
+        ))}
       </div>
 
       {/* Mensajes */}
-      <div className="flex-1 overflow-y-auto bg-[var(--wa-bg-chat)] px-6 py-4">
+      <div
+        className="flex-1 overflow-y-auto px-5 py-4"
+        style={{ background: "var(--wa-bg-chat)" }}
+      >
         {messages.map((m) => (
           <div
             key={m.id}
@@ -169,7 +177,7 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
               }`}
             >
               <p className="whitespace-pre-wrap break-words">{m.content}</p>
-              <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] text-gray-400">
+              <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] text-[var(--ib-muted-2)]">
                 {new Date(m.timestamp).toLocaleTimeString("es-AR", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -183,23 +191,24 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
       </div>
 
       {/* Composer */}
-      <form onSubmit={send} className="flex items-center gap-2 bg-white px-4 py-3">
+      <form onSubmit={send} className="flex items-center gap-2.5 px-4 py-3">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Escribí un mensaje"
-          className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm outline-none focus:border-[var(--wa-green)]"
+          className="flex-1 rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-[var(--wa-green)]"
         />
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          className="rounded-full bg-[var(--wa-green)] px-5 py-2 text-sm font-medium text-white hover:bg-[var(--wa-green-dark)] disabled:opacity-50"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-white disabled:opacity-50"
+          style={{ background: "var(--wa-green)" }}
         >
-          {sending ? "…" : "Enviar"}
+          {sending ? "…" : "➤"}
         </button>
       </form>
       {error && (
-        <p className="bg-red-50 px-4 py-2 text-xs text-red-600">{error}</p>
+        <p className="rounded-b-2xl bg-red-50 px-4 py-2 text-xs text-red-600">{error}</p>
       )}
     </div>
   );

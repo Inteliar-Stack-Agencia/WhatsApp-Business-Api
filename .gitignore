@@ -1,4 +1,6 @@
 .env
+.env.local
+.env*.local
 data/
 *.db
 *.db-shm
@@ -6,3 +8,10 @@ data/
 .DS_Store
 whatsapp-bot
 whatsapp
+
+# Next.js / Node
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo

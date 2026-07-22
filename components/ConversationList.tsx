@@ -19,7 +19,7 @@ export default function ConversationList() {
 
   const load = useCallback(async () => {
     const { data } = await supabaseRef.current
-      .from("conversations")
+      .from("inbox_conversations")
       .select("*")
       .order("last_message_at", { ascending: false, nullsFirst: false });
     setConversations((data as Conversation[]) ?? []);
@@ -38,12 +38,12 @@ export default function ConversationList() {
       .channel("inbox-conversations")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "conversations" },
+        { event: "*", schema: "public", table: "inbox_conversations" },
         () => load()
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
+        { event: "INSERT", schema: "public", table: "inbox_messages" },
         (payload) => {
           const msg = payload.new as { direction?: string; content?: string };
           if (

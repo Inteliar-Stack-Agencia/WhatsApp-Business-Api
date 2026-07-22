@@ -28,7 +28,7 @@ export default function Sidebar() {
 
     async function loadCount() {
       const { count } = await supabase
-        .from("conversations")
+        .from("inbox_conversations")
         .select("id", { count: "exact", head: true })
         .eq("status", "open");
       setCount(count ?? 0);
@@ -39,7 +39,7 @@ export default function Sidebar() {
       .channel("sidebar-conversations")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "conversations" },
+        { event: "*", schema: "public", table: "inbox_conversations" },
         () => loadCount()
       )
       .subscribe();

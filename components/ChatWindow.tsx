@@ -18,9 +18,9 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
   const load = useCallback(async () => {
     const supabase = supabaseRef.current;
     const [convRes, msgRes] = await Promise.all([
-      supabase.from("conversations").select("*").eq("id", conversationId).single(),
+      supabase.from("inbox_conversations").select("*").eq("id", conversationId).single(),
       supabase
-        .from("messages")
+        .from("inbox_messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .order("timestamp", { ascending: true }),
@@ -40,7 +40,7 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
         {
           event: "INSERT",
           schema: "public",
-          table: "messages",
+          table: "inbox_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
@@ -55,7 +55,7 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
         {
           event: "UPDATE",
           schema: "public",
-          table: "messages",
+          table: "inbox_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
@@ -68,7 +68,7 @@ export default function ChatWindow({ conversationId }: { conversationId: string 
         {
           event: "UPDATE",
           schema: "public",
-          table: "conversations",
+          table: "inbox_conversations",
           filter: `id=eq.${conversationId}`,
         },
         (payload) => setConversation(payload.new as Conversation)

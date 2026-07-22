@@ -26,7 +26,9 @@ supabase db push
 # O copiá supabase/migrations/20260721000000_whatsapp_conversations.sql al SQL Editor
 ```
 
-Crea: `whatsapp_accounts` (multi-cuenta), `conversations` y `messages`, con RLS y Realtime habilitados.
+Crea: `inbox_accounts` (multi-cuenta), `inbox_conversations` e `inbox_messages`, con RLS y Realtime habilitados.
+
+> Las tablas llevan el prefijo `inbox_` porque el proyecto de Supabase puede ser compartido con otros productos de la agencia — evita choques de nombres con tablas de otros productos que puedan existir en el mismo proyecto.
 
 ### 3. Crear un usuario del equipo
 
@@ -34,10 +36,10 @@ En Supabase → Authentication → Users → *Add user* (email + contraseña). C
 
 ### 4. Cargar tu número de WhatsApp
 
-Insertá tu cuenta en la tabla `whatsapp_accounts` (SQL Editor):
+Insertá tu cuenta en la tabla `inbox_accounts` (SQL Editor):
 
 ```sql
-insert into whatsapp_accounts (account_name, phone_number_id, access_token, business_account_id)
+insert into inbox_accounts (account_name, phone_number_id, access_token, business_account_id)
 values ('Inteliar Stack', 'TU_PHONE_NUMBER_ID', 'TU_ACCESS_TOKEN', 'TU_WABA_ID');
 ```
 
@@ -69,7 +71,7 @@ npm run dev
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role (solo servidor — webhook y APIs) |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Token que elegís vos y cargás igual en Meta |
 | `META_APP_SECRET` | App Secret de Meta (valida firma `X-Hub-Signature-256`) |
-| `WHATSAPP_ACCESS_TOKEN` | Fallback si el número no está en `whatsapp_accounts` |
+| `WHATSAPP_ACCESS_TOKEN` | Fallback si el número no está en `inbox_accounts` |
 | `WHATSAPP_API_VERSION` | Versión de Graph API (default `v23.0`) |
 
 ---
@@ -80,7 +82,7 @@ npm run dev
 - **Panel tipo WhatsApp Web** — Lista de conversaciones + chat individual, con tildes de estado.
 - **Responder desde el panel** — Envío de texto vía Cloud API (dentro de la ventana de 24 h).
 - **Etiquetas de lead** — Interesado / Seguimiento / No interesado, con filtros en la lista.
-- **Multi-cuenta** — Varios números de WhatsApp Business (uno por cliente de la agencia); cada cuenta con su propio token en `whatsapp_accounts`.
+- **Multi-cuenta** — Varios números de WhatsApp Business (uno por cliente de la agencia); cada cuenta con su propio token en `inbox_accounts`.
 - **Realtime** — Mensajes y conversaciones se actualizan en vivo (Supabase Realtime) + notificaciones del navegador.
 - **Auth** — Login con Supabase Auth; el panel y las APIs internas están protegidas por middleware. El webhook es público (lo exige Meta) pero validado por firma.
 
@@ -116,9 +118,11 @@ middleware.ts                    # Protege /inbox y /api/whatsapp/*
 
 ## 🗄 Tablas
 
-- **`whatsapp_accounts`** — `account_name`, `phone_number_id` (único), `access_token`, `business_account_id`. Sin políticas RLS → solo el servidor lee los tokens.
-- **`conversations`** — Una por contacto por número. `status` (open/closed), `label` (interesado/no_interesado/seguimiento), `last_message`, `account_id`.
-- **`messages`** — `direction` (inbound/outbound), `type`, `content`, `status` (sent/delivered/read/failed), `wa_message_id` (dedupe + tracking de estado).
+Todas prefijadas con `inbox_` porque el proyecto de Supabase es compartido con otro producto de la agencia (Riweb.app) y ese prefijo evita choques de nombres.
+
+- **`inbox_accounts`** — `account_name`, `phone_number_id` (único), `access_token`, `business_account_id`. Sin políticas RLS → solo el servidor lee los tokens.
+- **`inbox_conversations`** — Una por contacto por número. `status` (open/closed), `label` (interesado/no_interesado/seguimiento), `last_message`, `account_id`.
+- **`inbox_messages`** — `direction` (inbound/outbound), `type`, `content`, `status` (sent/delivered/read/failed), `wa_message_id` (dedupe + tracking de estado).
 
 ---
 

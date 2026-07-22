@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LABELS, type Conversation } from "@/lib/types";
 
 type ConversationWithAccount = Conversation & {
-  whatsapp_accounts: { account_name: string } | null;
+  inbox_accounts: { account_name: string } | null;
 };
 
 export default function ContactPanel({ conversationId }: { conversationId: string }) {
@@ -14,8 +14,8 @@ export default function ContactPanel({ conversationId }: { conversationId: strin
 
   const load = useCallback(async () => {
     const { data } = await supabaseRef.current
-      .from("conversations")
-      .select("*, whatsapp_accounts(account_name)")
+      .from("inbox_conversations")
+      .select("*, inbox_accounts(account_name)")
       .eq("id", conversationId)
       .single();
     setConversation((data as ConversationWithAccount) ?? null);
@@ -32,7 +32,7 @@ export default function ContactPanel({ conversationId }: { conversationId: strin
         {
           event: "UPDATE",
           schema: "public",
-          table: "conversations",
+          table: "inbox_conversations",
           filter: `id=eq.${conversationId}`,
         },
         () => load()
@@ -95,7 +95,7 @@ export default function ContactPanel({ conversationId }: { conversationId: strin
         />
         <Field
           label="Número"
-          value={conversation.whatsapp_accounts?.account_name ?? conversation.phone_number_id}
+          value={conversation.inbox_accounts?.account_name ?? conversation.phone_number_id}
         />
 
         <div className="mb-1.5 mt-3 text-[10px] text-[var(--ib-muted-2)]">Etiquetas</div>
